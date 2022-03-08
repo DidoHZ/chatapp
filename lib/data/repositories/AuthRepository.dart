@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'package:chatapp/services/notificationServices.dart';
+
 class AuthRepository {
   bool isUserLoggedIn() {
     return FirebaseAuth.instance.currentUser != null;
@@ -31,14 +33,7 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
-    final res = await FirebaseFirestore.instance
-        .collection("FCMs")
-        .where("uid", isEqualTo: FirebaseAuth.instance.currentUser!.uid)
-        .get();
-
-    await FirebaseFirestore.instance
-        .doc('FCMs/' + res.docs.first.id)
-        .update({ "FCM" : "" });
+    NotificationServices.setFCM("");
 
     await FirebaseAuth.instance.signOut();
   }

@@ -3,6 +3,7 @@ import 'package:chatapp/data/models/message.dart';
 import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/logic/cubit/chats/chats_cubit.dart';
 import 'package:chatapp/logic/fromSubmissionStatus.dart';
+import 'package:chatapp/services/notificationServices.dart';
 import 'package:chatapp/view/widgets/userChat.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,12 +30,13 @@ class _ChatPageState extends State<ChatPage> {
     String uid = FirebaseAuth.instance.currentUser!.uid;
 
     FirebaseMessaging.instance.getToken().then((FCMtoken) async {
-      if ((await FirebaseFirestore.instance
-                  .collection("User")
-                  .where("uid", isEqualTo: uid)
-                  .get())
-              .size ==
-          0) {
+      
+      final res = await await FirebaseFirestore.instance
+          .collection("User")
+          .where("uid", isEqualTo: uid)
+          .get();
+
+      if (res.size == 0) {
         await FirebaseFirestore.instance
             .collection("User")
             .add(<String, dynamic>{
@@ -49,6 +51,8 @@ class _ChatPageState extends State<ChatPage> {
           "uid": uid,
           "FCM": FCMtoken,
         });
+      } else {
+        NotificationServices.setFCM(FCMtoken!);
       }
     }); // Device Token for Firebase Messaging
 
@@ -58,9 +62,9 @@ class _ChatPageState extends State<ChatPage> {
         message.notification?.body! ?? message.data["body"]));
 
     // When Notificaion Open (Foreground)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) => Get.snackbar(
-        message.notification?.title! ?? message.data["title"],
-        message.notification?.body! ?? message.data["body"]));
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) =>
+        Get.snackbar(message.notification?.title! ?? message.data["title"],
+            message.notification?.body! ?? message.data["body"]));
   }
 
   @override
