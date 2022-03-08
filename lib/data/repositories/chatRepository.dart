@@ -3,6 +3,7 @@ import 'package:chatapp/data/sources/chatAPI.dart';
 import 'package:chatapp/services/chatServices.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../models/user.dart' as chatUser;
 
@@ -15,7 +16,7 @@ class ChatRepository {
             message: event.docs[index]["message"],
             isSender: ChatServices.isSender(event.docs[index]["uid"]))));
   }
-  
+
   Stream<List<Message>> getlastchat({String docID = ''}) {
     return ChatAPI().getlastChat(docID).map((event) => List.generate(
         event.size,
@@ -45,22 +46,33 @@ class ChatRepository {
 
     if (query.docs.isNotEmpty) return query.docs.single.id;
 
-    return (await chats.add({'users': {uid: null, currentuid: null}})).id;
+    return (await chats.add({
+      'users': {uid: null, currentuid: null}
+    }))
+        .id;
   }
 
   Future<void> sendMessage(
-      {required String uid,
+      {required user,
       required String message,
       required String chatID}) async {
 
     await FirebaseFirestore.instance
-      .collection("Chats")
-      .doc(chatID)
-      .collection("Chat")
-      .add({
-          "uid": FirebaseAuth.instance.currentUser!.uid,
-          "message": message,
-          "time": DateTime.now().millisecondsSinceEpoch
-        });
+        .collection("Chats")
+        .doc(chatID)
+        .collection("Chat")
+        .add({
+      "uid": FirebaseAuth.instance.currentUser!.uid,
+      "message": message,
+      "time": DateTime.now().millisecondsSinceEpoch
+    });
+
+    FirebaseMessaging.instance.sendMessage(
+      to: await ChatServices.getUserFCM(user.uid),
+      data: {
+        "title": user.username,
+        "body": message
+      }
+    );
   }
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 class MessagingInput extends StatefulWidget {
   final Function(String, BuildContext) onSubmit;
-  MessagingInput({required this.onSubmit, Key? key}) : super(key: key);
+  const MessagingInput({required this.onSubmit, Key? key}) : super(key: key);
 
   @override
   State<MessagingInput> createState() => _MessagingInputState();

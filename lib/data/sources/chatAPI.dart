@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ChatAPI {
   Stream<QuerySnapshot<Map<String, dynamic>>> getChats () {
     return FirebaseFirestore.instance
                   .collection("User")
+                  .where("uid", isNotEqualTo: FirebaseAuth.instance.currentUser!.uid)
                   .snapshots();
   }
 

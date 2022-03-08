@@ -50,11 +50,9 @@ class User {
     if (identical(this, other)) return true;
   
     return other is User &&
-      other.uid == uid &&
-      other.username == username &&
-      other.image == image;
+      other.uid == uid;
   }
 
   @override
-  int get hashCode => uid.hashCode ^ username.hashCode ^ image.hashCode;
+  int get hashCode => uid.hashCode ;
 }

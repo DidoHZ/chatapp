@@ -22,21 +22,25 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (context) => AuthRepository(),
-      child: RepositoryProvider(
-      create: (context) => ChatRepository(),
-      child: BlocProvider(
-            create: (context) =>
-                ChatsCubit(repo: context.read<ChatRepository>()),
-        child:GetMaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(
+          create: (context) => AuthRepository(),
         ),
-        onGenerateRoute: AppRouter().onGenerateRoute,
+        RepositoryProvider(
+          create: (context) => ChatRepository(),
+        ),
+      ],
+      child: BlocProvider(
+        create: (context) => ChatsCubit(repo: context.read<ChatRepository>()),
+        child: GetMaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+          ),
+          onGenerateRoute: AppRouter().onGenerateRoute,
+        ),
       ),
-     ))
     );
   }
 }

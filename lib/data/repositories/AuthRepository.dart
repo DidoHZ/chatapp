@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class AuthRepository {
@@ -30,6 +31,15 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
+    final res = await FirebaseFirestore.instance
+        .collection("FCMs")
+        .where("uid", isEqualTo: FirebaseAuth.instance.currentUser!.uid)
+        .get();
+
+    await FirebaseFirestore.instance
+        .doc('FCMs/' + res.docs.first.id)
+        .update({ "FCM" : "" });
+
     await FirebaseAuth.instance.signOut();
   }
 }

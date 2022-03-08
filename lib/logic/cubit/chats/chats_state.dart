@@ -1,47 +1,34 @@
 part of 'chats_cubit.dart';
 
 class ChatsState {
-  Stream<List<User>>? chats;
   FormSubmissionStatus status;
-  Stream<Map<String, Stream<List<Message>>>>? messages;
-  Stream<Map<String, Stream<List<Message>>>>? lastmessages;
+  ValueNotifier<Map<User, ValueNotifier<List<Message>>>> chats = ValueNotifier({});
 
   ChatsState({
-    this.chats,
     this.status = const InitialFormStatus(),
-    this.messages,
-    this.lastmessages
   });
 
-  ChatsState copyWith({
-    Stream<List<User>>? chats,
-    FormSubmissionStatus? status,
-    Stream<Map<String, Stream<List<Message>>>>? messages,
-    Stream<Map<String, Stream<List<Message>>>>? lastmessages
-  }) {
+  ChatsState copyWith(
+      {FormSubmissionStatus? status,
+      ValueNotifier<Map<User, Stream<List<Message>>>>? chats}) {
     return ChatsState(
-      chats: chats ?? this.chats,
-      status: status ?? this.status,
-      messages: messages ?? this.messages,
-      lastmessages: lastmessages ?? lastmessages
+      status: status ?? this.status
     );
   }
 
   @override
   String toString() =>
-      'ChatsState(chats: $chats, status: $status, messages: $messages, lastmessages: $lastmessages)';
+      'ChatsState(status: $status, chats: $chats )';
 
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
 
     return other is ChatsState &&
-        other.chats == chats &&
         other.status == status &&
-        other.messages == messages &&
-        other.lastmessages == lastmessages;
+        other.chats == chats;
   }
 
   @override
-  int get hashCode => chats.hashCode ^ status.hashCode ^ messages.hashCode ^ lastmessages.hashCode;
+  int get hashCode => status.hashCode ^ chats.hashCode;
 }

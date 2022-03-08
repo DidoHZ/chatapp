@@ -7,33 +7,23 @@ import 'widgets/chatContainer.dart';
 
 class Chat extends StatefulWidget {
   final user;
-  const Chat({this.user, Key? key}) : super(key: key);
+  const Chat({required this.user, Key? key}) : super(key: key);
 
   @override
   _ChatState createState() => _ChatState();
 }
 
-class _ChatState extends State<Chat> with AutomaticKeepAliveClientMixin{
-  @override
-  void initState() {
-    BlocProvider.of<ChatsCubit>(context).initChatID(widget.user.uid);
-    super.initState();
-  }
-
+class _ChatState extends State<Chat> {
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-        appBar: AppBar(title: Text("Chat ${widget.user.username}")),
+        appBar: AppBar(title: Text("${widget.user.username}")),
         body: Column(children: [
           ChatContainer(uid: widget.user.uid),
           MessagingInput(
-              onSubmit: (String value, BuildContext _context) async =>
-                  await BlocProvider.of<ChatsCubit>(_context)
-                      .sendMessage(value, widget.user.uid))
+              onSubmit: (String value, BuildContext context) async =>
+                  await BlocProvider.of<ChatsCubit>(context)
+                      .sendMessage(value, widget.user))
         ]));
   }
-  
-  @override
-  bool get wantKeepAlive => true;
 }

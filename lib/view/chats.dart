@@ -1,4 +1,6 @@
 import 'package:chatapp/constants/string.dart';
+import 'package:chatapp/data/models/message.dart';
+import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/logic/cubit/chats/chats_cubit.dart';
 import 'package:chatapp/logic/fromSubmissionStatus.dart';
 import 'package:chatapp/view/widgets/userChat.dart';
@@ -52,42 +54,41 @@ class _ChatPageState extends State<ChatPage> {
 
     // On Notificaion received (Background)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) => Get.snackbar(
-        message.notification!.title ?? "no title",
-        message.notification!.body ?? "no body"));
+        message.notification?.title! ?? message.data["title"],
+        message.notification?.body! ?? message.data["body"]));
 
     // When Notificaion Open (Foreground)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) =>
-        Get.snackbar(message.notification!.title ?? "no title",
-            message.notification!.body ?? "no body"));
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) => Get.snackbar(
+        message.notification?.title! ?? message.data["title"],
+        message.notification?.body! ?? message.data["body"]));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-            appBar: AppBar(
-              title: const Text("Chat"),
-              leading: IconButton(
-                icon: const Icon(Icons.power_settings_new),
-                onPressed: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushReplacementNamed(context, loginPage);
-                },
-              ),
-            ),
-            body: const ChatsBuilder());
+        appBar: AppBar(
+          title: const Text("Chat"),
+          leading: IconButton(
+            icon: const Icon(Icons.power_settings_new),
+            onPressed: () async {
+              context.read<AuthRepository>().signOut();
+              Navigator.pushReplacementNamed(context, loginPage);
+            },
+          ),
+        ),
+        body: const ChatsBuilder());
   }
 }
 
 class ChatsBuilder extends StatefulWidget {
-  const ChatsBuilder({
-    Key? key,
-  }) : super(key: key);
+  const ChatsBuilder({Key? key}) : super(key: key);
 
   @override
   State<ChatsBuilder> createState() => _ChatsBuilderState();
 }
 
-class _ChatsBuilderState extends State<ChatsBuilder> with AutomaticKeepAliveClientMixin{
+class _ChatsBuilderState extends State<ChatsBuilder>
+    with AutomaticKeepAliveClientMixin {
   @override
   void initState() {
     super.initState();
@@ -97,27 +98,35 @@ class _ChatsBuilderState extends State<ChatsBuilder> with AutomaticKeepAliveClie
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return BlocBuilder<ChatsCubit, ChatsState>(
       builder: (context, state) {
-        if (state.status is FormSubmitting) {
+        if (state.status is FormSubmitting)
           return const Center(child: CircularProgressIndicator());
-        }
 
-        return StreamBuilder<List<chatUser.User>>(
-            stream: state.chats,
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                return Column(
-                    children: List.generate(snapshot.data!.length,
-                        (index) => UserChat(user: snapshot.data![index])));
-              }
-
-              return const SizedBox();
+        return ValueListenableBuilder<
+                Map<chatUser.User, ValueNotifier<List<Message>>>>(
+            valueListenable: state.chats,
+            builder: (_, chats, __) {
+              return chats.isNotEmpty
+                  ? Column(children: [
+                      for (var k in chats.entries)
+                        ValueListenableBuilder<List<Message>>(
+                            valueListenable: k.value,
+                            builder: (__, chats, _) {
+                              return UserChat(
+                                user: k.key,
+                                chat: chats,
+                              );
+                            })
+                    ])
+                  : const SizedBox();
             });
       },
     );
   }
-  
+
   @override
   bool get wantKeepAlive => true;
 }
