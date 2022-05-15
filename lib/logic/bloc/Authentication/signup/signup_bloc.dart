@@ -1,6 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:chatapp/constants/enums.dart';
-import 'package:chatapp/constants/string.dart';
+import 'package:chatapp/constants/strings.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '/data/repositories/AuthRepository.dart';

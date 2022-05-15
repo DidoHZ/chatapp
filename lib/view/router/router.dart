@@ -1,7 +1,8 @@
-import 'package:chatapp/constants/string.dart';
+import 'package:chatapp/constants/strings.dart';
 import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/view/chats.dart';
 import 'package:chatapp/view/login.dart';
+import 'package:chatapp/view/profile.dart';
 import 'package:chatapp/view/signup.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,6 +31,9 @@ class AppRouter {
       case chatPage:
         return MaterialPageRoute(
             builder: (_) => Chat(user: settings.arguments));
+      case profilePage:
+        return MaterialPageRoute(
+            builder: (_) => const ProfilePage());
       default:
         return null;
     }

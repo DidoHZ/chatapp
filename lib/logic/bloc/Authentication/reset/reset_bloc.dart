@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import 'package:chatapp/constants/string.dart';
+import 'package:chatapp/constants/strings.dart';
 import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/logic/fromSubmissionStatus.dart';
 import 'package:firebase_auth/firebase_auth.dart';

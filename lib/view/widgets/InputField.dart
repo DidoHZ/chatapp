@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 class MessagingInput extends StatefulWidget {
   final Function(String, BuildContext) onSubmit;
-  const MessagingInput({required this.onSubmit, Key? key}) : super(key: key);
+  final Function(String, BuildContext)? onSendImage;
+  final Function(String, BuildContext)? onSendFile;
+  const MessagingInput({required this.onSubmit, this.onSendImage, this.onSendFile, Key? key}) : super(key: key);
 
   @override
   State<MessagingInput> createState() => _MessagingInputState();

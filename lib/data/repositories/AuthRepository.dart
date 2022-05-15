@@ -1,7 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-import 'package:chatapp/services/notificationServices.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthRepository {
   bool isUserLoggedIn() {
@@ -17,6 +15,7 @@ class AuthRepository {
     UserCredential userCredential = await FirebaseAuth.instance
         .createUserWithEmailAndPassword(email: mail, password: pass);
     await userCredential.user?.updateDisplayName(username);
+    await _addUser(userCredential);
   }
 
   Future<void> restPassword(String mail) async {
@@ -33,8 +32,14 @@ class AuthRepository {
   }
 
   Future<void> signOut() async {
-    NotificationServices.setFCM("");
-
     await FirebaseAuth.instance.signOut();
+  }
+
+  Future<void> _addUser(UserCredential userCredential) async{
+    await FirebaseFirestore.instance.collection("User").add(<String, dynamic>{
+        "uid": userCredential.user!.uid,
+        "username": FirebaseAuth.instance.currentUser?.displayName,
+        "image": ""
+      });
   }
 }

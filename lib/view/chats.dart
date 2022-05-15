@@ -1,17 +1,18 @@
-import 'package:chatapp/constants/string.dart';
+import 'dart:convert';
+
+import 'package:chatapp/constants/strings.dart';
+import 'package:chatapp/core/Storage.dart';
 import 'package:chatapp/data/models/message.dart';
-import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/logic/cubit/chats/chats_cubit.dart';
 import 'package:chatapp/logic/fromSubmissionStatus.dart';
-import 'package:chatapp/services/notificationServices.dart';
+import 'package:chatapp/services/notificationService.dart';
+import 'package:chatapp/services/userService.dart';
 import 'package:chatapp/view/widgets/userChat.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get/get.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/models/user.dart' as chatUser;
 
@@ -23,59 +24,56 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  late NotificationService notificationService;
+  late UserService userservice;
+
   @override
   void initState() {
+    notificationService = NotificationService(context: context);
+    userservice = UserService(context: context);
+    getCache();
     super.initState();
+  }
 
-    String uid = FirebaseAuth.instance.currentUser!.uid;
+  void getCache() async {
+    final value = await SharedPreferences.getInstance();
+    // Get Chat Cache from : Json (String) to [Map<User,ValueNotifier<List<Messages>>>]
+    if (value.getString('chats') == null) return;
+    BlocProvider.of<ChatsCubit>(context).state.chats.value = {
+      for (var i in json.decode(value.getString('chats')!).entries)
+        chatUser.User.fromJson(i.key):
+            ValueNotifier([for (var j in i.value) Message.fromJson(j)])
+    };
+  }
 
-    FirebaseMessaging.instance.getToken().then((FCMtoken) async {
-      
-      final res = await await FirebaseFirestore.instance
-          .collection("User")
-          .where("uid", isEqualTo: uid)
-          .get();
-
-      if (res.size == 0) {
-        await FirebaseFirestore.instance
-            .collection("User")
-            .add(<String, dynamic>{
-          "uid": uid,
-          "username": FirebaseAuth.instance.currentUser?.displayName,
-          "image": ""
-        });
-
-        await FirebaseFirestore.instance
-            .collection("FCMs")
-            .add(<String, dynamic>{
-          "uid": uid,
-          "FCM": FCMtoken,
-        });
-      } else {
-        NotificationServices.setFCM(FCMtoken!);
-      }
-    }); // Device Token for Firebase Messaging
-
-    // On Notificaion received (Background)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) => Get.snackbar(
-        message.notification?.title! ?? message.data["title"],
-        message.notification?.body! ?? message.data["body"]));
-
-    // When Notificaion Open (Foreground)
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) =>
-        Get.snackbar(message.notification?.title! ?? message.data["title"],
-            message.notification?.body! ?? message.data["body"]));
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
+          actions: [
+            GestureDetector(
+                onTap: () {
+                  Navigator.of(context).pushNamed(profilePage);
+                },
+                child: FutureBuilder<Image>(
+                    future: Storage.instance.getMyProfileImage(),
+                    builder: (context, snapshot) {
+                      return CircleAvatar(backgroundImage: snapshot.data?.image);
+                    }))
+          ],
           title: const Text("Chat"),
           leading: IconButton(
             icon: const Icon(Icons.power_settings_new),
             onPressed: () async {
-              context.read<AuthRepository>().signOut();
+              userservice.stopService();
+              notificationService.stopService();
+              (await SharedPreferences.getInstance()).clear();
+              await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, loginPage);
             },
           ),
@@ -113,19 +111,22 @@ class _ChatsBuilderState extends State<ChatsBuilder>
                 Map<chatUser.User, ValueNotifier<List<Message>>>>(
             valueListenable: state.chats,
             builder: (_, chats, __) {
-              return chats.isNotEmpty
-                  ? Column(children: [
-                      for (var k in chats.entries)
-                        ValueListenableBuilder<List<Message>>(
-                            valueListenable: k.value,
-                            builder: (__, chats, _) {
-                              return UserChat(
-                                user: k.key,
-                                chat: chats,
-                              );
-                            })
-                    ])
-                  : const SizedBox();
+              if (chats.isEmpty)
+                return const Center(child: CircularProgressIndicator());
+
+              return SingleChildScrollView(
+                child: Column(children: [
+                  for (var k in chats.entries)
+                    ValueListenableBuilder<List<Message>>(
+                        valueListenable: k.value,
+                        builder: (__, messages, _) {
+                          return UserChat(
+                            user: k.key,
+                            chat: messages,
+                          );
+                        })
+                ]),
+              );
             });
       },
     );

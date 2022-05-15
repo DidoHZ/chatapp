@@ -1,4 +1,5 @@
-import 'package:chatapp/constants/string.dart';
+import 'package:chatapp/constants/strings.dart';
+import 'package:chatapp/core/Storage.dart';
 import 'package:chatapp/data/models/message.dart';
 import 'package:flutter/material.dart';
 
@@ -16,13 +17,20 @@ class _UserChatState extends State<UserChat> {
   String getTime(String date) {
     final datetime = DateTime.fromMillisecondsSinceEpoch(int.parse(date));
 
-    return "${datetime.hour}:${datetime.minute}";
+    return "${datetime.hour.toString().padLeft(2, '0')}:${datetime.minute.toString().padLeft(2, '0')}";
   }
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: const Icon(Icons.account_circle_outlined, size: 30),
+      leading: FutureBuilder(
+          future: Storage.instance.getProfileImage(widget.user.uid),
+          builder: (context, AsyncSnapshot<Image> snapshot) {
+            //print("${widget.user.username}: ${snapshot.data}");
+            if (!snapshot.hasData) return const CircleAvatar();
+            return CircleAvatar(
+                backgroundImage: snapshot.data?.image);
+          }),
       onTap: () =>
           Navigator.of(context).pushNamed(chatPage, arguments: widget.user),
       title: Text(widget.user.username),
@@ -31,10 +39,12 @@ class _UserChatState extends State<UserChat> {
         children: [
           Padding(
               padding: const EdgeInsets.only(left: 10),
-              child: Text( widget.chat.isNotEmpty ? widget.chat.first!.message : "", overflow: TextOverflow.ellipsis)),
-          Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [Text(widget.chat.isNotEmpty? getTime(widget.chat.first!.date) : "")])
+              child: Text(
+                  widget.chat.isNotEmpty ? widget.chat.first!.message : "",
+                  overflow: TextOverflow.ellipsis)),
+          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
+            Text(widget.chat.isNotEmpty ? getTime(widget.chat.first!.date) : "")
+          ])
         ],
       ),
     );

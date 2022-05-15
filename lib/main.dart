@@ -1,6 +1,7 @@
 import 'package:chatapp/data/repositories/AuthRepository.dart';
 import 'package:chatapp/data/repositories/chatRepository.dart';
 import 'package:chatapp/logic/cubit/chats/chats_cubit.dart';
+import 'package:chatapp/logic/cubit/profile/profile_cubit.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -31,8 +32,16 @@ class MyApp extends StatelessWidget {
           create: (context) => ChatRepository(),
         ),
       ],
-      child: BlocProvider(
-        create: (context) => ChatsCubit(repo: context.read<ChatRepository>()),
+      child: MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) =>
+                ChatsCubit(repo: context.read<ChatRepository>()),
+          ),
+          BlocProvider(
+            create: (context) => ProfileCubit(),
+          ),
+        ],
         child: GetMaterialApp(
           debugShowCheckedModeBanner: false,
           theme: ThemeData(

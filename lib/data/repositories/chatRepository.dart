@@ -1,20 +1,27 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
 import 'package:chatapp/data/models/message.dart';
 import 'package:chatapp/data/sources/chatAPI.dart';
-import 'package:chatapp/services/chatServices.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../models/user.dart' as chatUser;
 
 class ChatRepository {
+
+  bool _isSender(String id) {
+    return id != FirebaseAuth.instance.currentUser!.uid;
+  }
+
   Stream<List<Message>> getchat({String docID = ''}) {
     return ChatAPI().getChat(docID).map((event) => List.generate(
         event.size,
         (index) => Message(
             date: event.docs[index]["time"].toString(),
             message: event.docs[index]["message"],
-            isSender: ChatServices.isSender(event.docs[index]["uid"]))));
+            isSender: _isSender(event.docs[index]["uid"]))));
   }
 
   Stream<List<Message>> getlastchat({String docID = ''}) {
@@ -23,7 +30,7 @@ class ChatRepository {
         (index) => Message(
             date: event.docs[index]["time"].toString(),
             message: event.docs[index]["message"],
-            isSender: ChatServices.isSender(event.docs[index]["uid"]))));
+            isSender: _isSender(event.docs[index]["uid"]))));
   }
 
   Stream<List<chatUser.User>> getUsers() {
@@ -53,10 +60,8 @@ class ChatRepository {
   }
 
   Future<void> sendMessage(
-      {required user,
-      required String message,
-      required String chatID}) async {
-
+      {required user, required String message, required String chatID}) async {
+    // Send Chat Data To Server
     await FirebaseFirestore.instance
         .collection("Chats")
         .doc(chatID)
@@ -65,14 +70,19 @@ class ChatRepository {
       "uid": FirebaseAuth.instance.currentUser!.uid,
       "message": message,
       "time": DateTime.now().millisecondsSinceEpoch
+    }).then((value) async {
+      // When finished Notifiy the user
+      http.post(Uri.parse("http://192.168.1.40:3000/Notification"),
+          body: json.encode({
+	    "type": "chat",
+	    "sender": FirebaseAuth.instance.currentUser!.uid,
+	    "message": message,
+	    "reciver": user.uid
+          }),
+          headers: {
+            "content-type": "application/json",
+            "Access-Control-Allow-Origin": "*"
+          });
     });
-
-    FirebaseMessaging.instance.sendMessage(
-      to: await ChatServices.getUserFCM(user.uid),
-      data: {
-        "title": user.username,
-        "body": message
-      }
-    );
   }
 }
